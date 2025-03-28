@@ -42,9 +42,22 @@ module UnifiedEmbed
     def find_liquid_tag_for(link:)
       possible_domains = Subforem.cached_domains + [Settings::General.app_domain]
       link_path = Addressable::URI.parse(link).path
+
       return LinkTag if link.match?(%r{https?://(#{possible_domains.map { |domain| Regexp.escape(domain) }.join("|")})/(?<username>[^/]+)/(?<slug>[^/]+)}) && Article.find_by(path: link_path)
+
+      if youtube_url?(link)
+        return YoutubeTag 
+      end
+
       _regexp, klass = @registry.detect { |regexp, _tag_class| regexp.match?(link) }
       klass.presence || OpenGraphTag
+    end
+
+    private
+
+    def youtube_url?(link)
+      uri = URI.parse(link)
+      uri.host&.include?("youtube.com") || uri.host&.include?("youtu.be")
     end
   end
 end
